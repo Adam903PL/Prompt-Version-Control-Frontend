@@ -1,9 +1,11 @@
-import LoginCardSection from '@/shared/components/ui/signin-form';
+import LoginCardSection from '@/features/auth/components/SignIn/signin-form';
 import React from 'react';
-// basic setup for test development
 
-const page = () => {
+/**
+ * @deprecated This code is ONLY for testing AWS backend. Do not use in production.
+ */
+const Page = () => {
   return <LoginCardSection />;
 };
 
-export default page;
+export default Page;

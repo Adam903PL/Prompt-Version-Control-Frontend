@@ -25,14 +25,16 @@ import {
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
-import { signUp } from '@/shared/lib/auth-client';
-
+import { signIn, signUp } from '@/shared/lib/auth-client';
+import { useSession } from '@/shared/lib/auth-client';
+import { createUserFolder } from '../../services/user-file-structure-service';
+import { setupUserFolder } from '../../services/setup-new-user';
 export default function SignupCardSection() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
+  const { data: session, isPending } = useSession();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -107,42 +109,76 @@ export default function SignupCardSection() {
       { name, email, password },
       {
         onRequest: () => console.log('⏳ Creating account...'),
-        onSuccess: () => {
+        onSuccess: async (ctx) => {
           console.log('✅ Zarejestrowano');
+          if (ctx.data?.user?.id) {
+            try {
+              await setupUserFolder(ctx.data.user.id);
+            } catch (err) {
+              console.error('Failed to setup user folder', err);
+            }
+          }
           setSuccess(true);
         },
         onError: (ctx) => {
-          setError(ctx.error.message);
+          setError(ctx.error.message ?? 'An error occurred during sign up');
         },
       },
     );
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(signUpError.message ?? 'An error occurred');
     }
 
     setIsLoading(false);
   };
 
+  const handleGithubSignUp = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    await signIn.social(
+      {
+        provider: 'github',
+        callbackURL: '/',
+      },
+      {
+        onRequest: () => {
+          console.log('🔄 Redirecting to GitHub...');
+        },
+        onSuccess: async (ctx) => {
+          console.log('✅ Successfully signed in!', ctx);
+
+          if (ctx.data?.user?.id) {
+            try {
+              // Wywołaj Server Action
+              const result = await setupUserFolder(ctx.data.user.id);
+
+              if (result.success) {
+                console.log('✅ S3 folder created:', result.data);
+              } else {
+                console.error('❌ Failed to create S3 folder:', result.error);
+                setError('Account created but workspace setup failed');
+              }
+            } catch (error) {
+              console.error('❌ Failed to setup folder:', error);
+              setError('Account created but workspace setup failed');
+            }
+          }
+        },
+        onError: (ctx) => {
+          console.error('❌ Sign in failed:', ctx.error);
+          setError(ctx.error.message || 'Unable to sign up with GitHub');
+        },
+      },
+    );
+
+    setIsLoading(false);
+  };
   if (success) {
     return (
       <section className="fixed inset-0">
         <canvas ref={canvasRef} className="absolute inset-0 bg-black" />
-        <style jsx global>{`
-          @keyframes card-entrance {
-            from {
-              opacity: 0;
-              transform: translateY(20px) scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
-          .card-animate {
-            animation: card-entrance 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-        `}</style>
         <div className="h-full w-full grid place-items-center px-4">
           <Card className="card-animate w-full max-w-md border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
             <CardHeader className="space-y-1">
@@ -174,137 +210,6 @@ export default function SignupCardSection() {
   return (
     <section className="fixed inset-0">
       <canvas ref={canvasRef} className="absolute inset-0 bg-black" />
-
-      <style jsx global>{`
-        @keyframes card-entrance {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes glow-pulse {
-          0%,
-          100% {
-            box-shadow:
-              0 0 20px rgba(250, 250, 250, 0.1),
-              0 0 40px rgba(250, 250, 250, 0.05);
-          }
-          50% {
-            box-shadow:
-              0 0 30px rgba(250, 250, 250, 0.2),
-              0 0 60px rgba(250, 250, 250, 0.1);
-          }
-        }
-
-        @keyframes shimmer {
-          0% {
-            background-position: -200% center;
-          }
-          100% {
-            background-position: 200% center;
-          }
-        }
-
-        .card-animate {
-          animation: card-entrance 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .glow-button {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-
-        .glow-button:hover {
-          animation: glow-pulse 2s ease-in-out infinite;
-          transform: translateY(-2px);
-        }
-
-        .glow-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
-          background-size: 200% 100%;
-          animation: shimmer 3s infinite;
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-
-        .glow-button:hover::before {
-          opacity: 1;
-        }
-
-        .input-focus {
-          transition: all 0.3s ease;
-        }
-
-        .input-focus:focus {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(250, 250, 250, 0.1);
-        }
-
-        .github-button {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-
-        .github-button::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            45deg,
-            transparent 30%,
-            rgba(250, 250, 250, 0.1) 50%,
-            transparent 70%
-          );
-          transform: translateX(-100%);
-          transition: transform 0.6s ease;
-        }
-
-        .github-button:hover::after {
-          transform: translateX(100%);
-        }
-
-        .github-button:hover {
-          border-color: rgba(250, 250, 250, 0.3);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(250, 250, 250, 0.1);
-        }
-
-        .label-animate {
-          transition: color 0.2s ease;
-        }
-
-        .label-animate:has(+ div input:focus) {
-          color: rgb(250, 250, 250);
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .loading-spinner {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
 
       {/* Centered Signup Card */}
       <div className="h-full w-full grid place-items-center px-4">
@@ -426,7 +331,7 @@ export default function SignupCardSection() {
 
             <Button
               type="button"
-              onClick={() => signUp.social({ provider: 'github' })}
+              onClick={handleGithubSignUp}
               variant="outline"
               className="github-button w-full h-10 rounded-lg border-zinc-800 bg-zinc-950 text-zinc-50"
             >

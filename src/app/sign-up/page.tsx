@@ -1,7 +1,9 @@
-import SignupCardSection from '@/shared/components/ui/signup-form';
+import SignupCardSection from '@/features/auth/components/SignUp/signup-form';
 import React from 'react';
-// basic setup for test development
 
+/**
+ * @deprecated This code is ONLY for testing AWS backend. Do not use in production.
+ */
 const page = () => {
   return <SignupCardSection />;
 };

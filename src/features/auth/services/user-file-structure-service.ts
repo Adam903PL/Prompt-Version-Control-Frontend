@@ -1,0 +1,29 @@
+// services/user-file-structure-service.ts
+import { s3Client } from '@/shared/lib/s3-client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+
+export async function createUserFolder(userId: string) {
+  const bucketName = process.env.AWS_BUCKET_NAME!;
+
+  if (!bucketName) {
+    throw new Error('AWS_BUCKET_NAME is not configured');
+  }
+
+  const folderKey = `pvc/users/${userId}/`;
+
+  try {
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: folderKey,
+      Body: '', // Pusty content dla folderu
+    });
+
+    await s3Client.send(command);
+
+    console.log(`✅ Folder created: ${folderKey}`); // Poprawiony template literal
+    return { success: true, path: folderKey };
+  } catch (error) {
+    console.error('❌ Error creating folder:', error);
+    throw error;
+  }
+}
