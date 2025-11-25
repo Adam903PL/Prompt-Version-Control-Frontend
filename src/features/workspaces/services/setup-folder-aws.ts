@@ -1,15 +1,17 @@
-// services/user-file-structure-service.ts
 import { s3Client } from '@/shared/lib/s3-client';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 
-export async function createUserFolder(userId: string) {
+export async function createWorkspaceFolder(
+  userId: string,
+  workspaceId: string,
+) {
   const bucketName = process.env.AWS_BUCKET_NAME!;
 
   if (!bucketName) {
     throw new Error('AWS_BUCKET_NAME is not configured');
   }
 
-  const folderKey = `pvc/users/${userId}/`;
+  const folderKey = `pvc/users/${userId}/workspaces/${workspaceId}/`;
 
   try {
     const command = new PutObjectCommand({

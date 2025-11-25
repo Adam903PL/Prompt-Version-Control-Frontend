@@ -25,8 +25,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   sshKeys       SshKey[]
-  projectsOwned Project[]
-  contributions ProjectContributor[]
+  workspacesOwned Workspace[]
+  contributions WorkspaceContributor[]
 
 
   @@unique([email])
@@ -94,23 +94,24 @@ model SshKey {
 
 
 
-model ProjectContributor {
+model WorkspaceContributor {
   id        String   @id @default(cuid())
   role      String   @default("contributor") // owner, maintainer, contributor
   addedAt   DateTime @default(now())
 
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, userId]) // user nie może być contributor 2x
+  @@unique([workspaceId, userId])
 }
 
-model Project {
+model Workspace {
   id          String   @id @default(cuid())
   name        String?
+  slug        String   @default("workspace")
   createdAt   DateTime @default(now())
   visibility  String   @default("public") 
   description String?
@@ -118,8 +119,8 @@ model Project {
   
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contributors ProjectContributor[]
+  contributors WorkspaceContributor[]
 
-
-  @@map("project")
+  @@unique([userId, slug])
+  @@map("workspace")
 }
