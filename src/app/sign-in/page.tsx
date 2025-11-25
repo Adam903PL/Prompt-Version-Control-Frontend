@@ -1,4 +1,4 @@
-import LoginCardSection from '@/features/auth/components/SignIn/signin-form';
+import LoginCardSection from '@/features/auth/components/signin-form';
 import React from 'react';
 
 /**
