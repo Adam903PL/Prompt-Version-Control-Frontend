@@ -27,8 +27,8 @@ import {
 } from 'lucide-react';
 import { signIn, signUp } from '@/shared/lib/auth-client';
 import { useSession } from '@/shared/lib/auth-client';
-import { createUserFolder } from '../../services/user-file-structure-service';
-import { setupUserFolder } from '../../services/setup-new-user';
+import { createUserFolder } from '../services/user-file-structure-service';
+import { setupUserFolder } from '../services/setup-new-user';
 export default function SignupCardSection() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,7 +140,7 @@ export default function SignupCardSection() {
     await signIn.social(
       {
         provider: 'github',
-        callbackURL: '/',
+        callbackURL: '/setup-username',
       },
       {
         onRequest: () => {
