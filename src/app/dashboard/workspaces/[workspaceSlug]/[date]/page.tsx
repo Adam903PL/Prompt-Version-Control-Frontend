@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/prisma';
-import WorkspaceReportPage from '@/features/workspaces/components/WorkspaceReportPage';
+import WorkspaceReportPage from '@/features/workspaces/components/workspace-report-page';
 
 interface PageProps {
   params: Promise<{

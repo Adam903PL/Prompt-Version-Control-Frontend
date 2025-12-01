@@ -1,11 +1,9 @@
-import LoginCardSection from '@/features/auth/components/signin-form';
-import React from 'react';
+import SignInForm from '@/features/auth/components/signin-form';
 
-/**
- * @deprecated This code is ONLY for testing AWS backend. Do not use in production.
- */
-const Page = () => {
-  return <LoginCardSection />;
-};
-
-export default Page;
+export default function SignInPage() {
+  return (
+    <main>
+      <SignInForm />
+    </main>
+  );
+}

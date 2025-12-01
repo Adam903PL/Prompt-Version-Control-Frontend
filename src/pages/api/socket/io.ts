@@ -105,7 +105,8 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
         );
 
         // Broadcast to dashboard (frontend) in the same room
-        // socket.to(workspaceId).emit('dashboard:leak_alert', msg);
+        console.log(`📡 Broadcasting leak alert to room: ${workspaceId}`);
+        io.to(workspaceId).emit('dashboard:leak_alert', msg);
       });
 
       socket.on('disconnect', () => {

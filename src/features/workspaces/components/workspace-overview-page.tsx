@@ -9,15 +9,18 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
+import { LiveStreamFeed } from './live-stream-feed';
 
 interface WorkspaceOverviewPageProps {
   username: string;
   workspaceSlug: string;
+  token?: string;
 }
 
 export default async function WorkspaceOverviewPage({
   username,
   workspaceSlug,
+  token,
 }: WorkspaceOverviewPageProps) {
   const workspace = await getWorkspaceBySlug(username, workspaceSlug);
 
@@ -64,6 +67,9 @@ export default async function WorkspaceOverviewPage({
             </p>
           </CardHeader>
         </Card>
+
+        {/* Live Stream Feed */}
+        <LiveStreamFeed workspaceId={workspace.id} token={token} />
 
         <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50">
           <CardHeader>

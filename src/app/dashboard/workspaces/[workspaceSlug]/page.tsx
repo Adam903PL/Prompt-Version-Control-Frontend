@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/shared/lib/auth';
 import { prisma } from '@/shared/lib/prisma';
-import WorkspaceOverviewPage from '@/features/workspaces/components/WorkspaceOverviewPage';
+import WorkspaceOverviewPage from '@/features/workspaces/components/workspace-overview-page';
 
 interface PageProps {
   params: Promise<{
@@ -35,6 +35,7 @@ export default async function DashboardWorkspacePage({ params }: PageProps) {
     <WorkspaceOverviewPage
       username={user.username}
       workspaceSlug={workspaceSlug}
+      token={session.session.token}
     />
   );
 }

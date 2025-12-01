@@ -1,15 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Image from 'next/image';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/shared/components/ui/card';
+  SignInSchema,
+  type SignInDto,
+} from '@/features/auth/contracts/auth.dto';
+import { Card, CardContent, CardFooter } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
@@ -18,90 +18,36 @@ import { Separator } from '@/shared/components/ui/separator';
 import { Eye, EyeOff, Github, Lock, Mail, ArrowRight } from 'lucide-react';
 import { signIn } from '@/shared/lib/auth-client';
 
+import { AuthBackground } from '@/shared/components/ui/auth-background';
+
 export default function LoginCardSection() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInDto>({
+    resolver: zodResolver(SignInSchema),
+  });
 
-    const setSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setSize();
-
-    type P = { x: number; y: number; v: number; o: number };
-    let ps: P[] = [];
-    let raf = 0;
-
-    const make = () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      v: Math.random() * 0.25 + 0.05,
-      o: Math.random() * 0.35 + 0.15,
-    });
-
-    const init = () => {
-      ps = [];
-      const count = Math.floor((canvas.width * canvas.height) / 9000);
-      for (let i = 0; i < count; i++) ps.push(make());
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ps.forEach((p) => {
-        p.y -= p.v;
-        if (p.y < 0) {
-          p.x = Math.random() * canvas.width;
-          p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.25 + 0.05;
-          p.o = Math.random() * 0.35 + 0.15;
-        }
-        ctx.fillStyle = `rgba(250,250,250,${p.o})`;
-        ctx.fillRect(p.x, p.y, 0.7, 2.2);
-      });
-      raf = requestAnimationFrame(draw);
-    };
-
-    const onResize = () => {
-      setSize();
-      init();
-    };
-
-    window.addEventListener('resize', onResize);
-    init();
-    raf = requestAnimationFrame(draw);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (data: SignInDto) => {
     setIsLoading(true);
     setError(null);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
     const { error: signInError } = await signIn.email(
-      { email, password },
+      { email: data.email, password: data.password },
       {
         onRequest: () => console.log('Signing in...'),
         onSuccess: () => console.log('Signed in'),
-        onError: (ctx) => setError(ctx.error.message),
+        onError: (ctx) => setError(ctx.error.message ?? 'An error occurred'),
       },
     );
 
     if (signInError) {
-      setError(signInError.message);
+      setError(signInError.message ?? 'An error occurred');
     }
 
     setIsLoading(false);
@@ -117,7 +63,7 @@ export default function LoginCardSection() {
       if (socialError) {
         setError(socialError.message);
       }
-    } catch (err) {
+    } catch {
       setError('Unable to sign in with GitHub.');
     } finally {
       setIsLoading(false);
@@ -125,42 +71,56 @@ export default function LoginCardSection() {
   };
 
   return (
-    <section className="fixed inset-0">
-      <canvas ref={canvasRef} className="absolute inset-0 bg-black" />
-
+    <AuthBackground>
       {/* Centered Login Card */}
-      <div className="h-full w-full grid place-items-center px-4">
-        <Card className="card-animate w-full max-w-sm border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-white">Welcome back</CardTitle>
-            <CardDescription className="text-zinc-400">
-              Sign in to your account
-            </CardDescription>
-          </CardHeader>
+      <div className="h-full w-full flex flex-col items-center justify-center px-4 flex-grow">
+        <div className="mb-8 flex flex-col items-center justify-center space-y-4">
+          <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+            {/* Logo w SVG - białe */}
+            <Image
+              src="/icon/logo.svg"
+              alt="PVC Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10"
+            />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              PVC
+            </h1>
+            <p className="text-xs text-zinc-500 font-mono tracking-widest uppercase mt-1">
+              Prompt Version Control
+            </p>
+          </div>
+        </div>
 
-          <CardContent className="grid gap-5">
+        <Card className="card-animate w-full max-w-sm border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
+          <CardContent className="grid gap-5 pt-6">
             {error && (
               <div className="flex items-center gap-2 p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                 <span>{error}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="grid gap-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
               <div className="grid gap-2">
                 <Label htmlFor="email" className="text-zinc-300 label-animate">
                   Email
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                   <Input
                     id="email"
-                    name="email"
                     type="email"
                     placeholder="you@example.com"
-                    required
-                    className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus peer"
+                    className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    {...register('email')}
                   />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                 </div>
+                {errors.email && (
+                  <p className="text-xs text-red-500">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -171,15 +131,14 @@ export default function LoginCardSection() {
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors" />
                   <Input
                     id="password"
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="********"
-                    required
-                    className="pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    className="peer pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    {...register('password')}
                   />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                   <button
                     type="button"
                     aria-label={
@@ -195,6 +154,11 @@ export default function LoginCardSection() {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-xs text-red-500">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
@@ -202,6 +166,11 @@ export default function LoginCardSection() {
                   <Checkbox
                     id="remember"
                     className="border-zinc-700 data-[state=checked]:bg-zinc-50 data-[state=checked]:text-zinc-900 transition-all"
+                    onCheckedChange={() => {
+                      // Manually handle checkbox if needed or register it
+                      // For now, just keeping UI consistent, or register 'rememberMe'
+                    }}
+                    {...register('rememberMe')}
                   />
                   <Label
                     htmlFor="remember"
@@ -266,6 +235,6 @@ export default function LoginCardSection() {
           </CardFooter>
         </Card>
       </div>
-    </section>
+    </AuthBackground>
   );
 }
