@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Threads from '@/shared/components/Threads';
 import { UsernameGuard } from '@/features/auth/components/username-guard';
+import PageTransition from '@/shared/components/ui/page-transition';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -44,7 +45,7 @@ export default function RootLayout({
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <UsernameGuard />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </div>
       </body>
     </html>

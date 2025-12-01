@@ -1,4 +1,4 @@
-import React from 'react';
+import { motion } from 'framer-motion';
 
 export interface IntegrationCardProps {
   name: string;
@@ -13,8 +13,13 @@ export const IntegrationCard = ({
   icon,
   active,
 }: IntegrationCardProps) => (
-  <div
-    className={`p-6 rounded-xl border flex flex-col items-center justify-center gap-3 transition-all ${
+  <motion.div
+    whileHover={{ scale: 1.05, y: -5 }}
+    initial={{ opacity: 0, scale: 0.9 }}
+    whileInView={{ opacity: 1, scale: 1 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.3 }}
+    className={`p-6 rounded-xl border flex flex-col items-center justify-center gap-3 transition-colors cursor-default ${
       active
         ? 'bg-white text-black border-white'
         : 'bg-white/5 border-white/10 text-gray-400 grayscale hover:grayscale-0 hover:bg-white/10'
@@ -33,5 +38,5 @@ export const IntegrationCard = ({
     >
       {status}
     </span>
-  </div>
+  </motion.div>
 );
