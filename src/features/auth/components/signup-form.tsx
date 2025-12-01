@@ -1,7 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  SignUpSchema,
+  type SignUpDto,
+} from '@/features/auth/contracts/auth.dto';
 import {
   Card,
   CardHeader,
@@ -26,91 +33,33 @@ import {
   XCircle,
 } from 'lucide-react';
 import { signIn, signUp } from '@/shared/lib/auth-client';
-import { useSession } from '@/shared/lib/auth-client';
-import { createUserFolder } from '../services/user-file-structure-service';
 import { setupUserFolder } from '../services/setup-new-user';
+import { AuthBackground } from '@/shared/components/ui/auth-background';
+
 export default function SignupCardSection() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const { data: session, isPending } = useSession();
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignUpDto>({
+    resolver: zodResolver(SignUpSchema),
+  });
 
-    const setSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setSize();
-
-    type P = { x: number; y: number; v: number; o: number };
-    let ps: P[] = [];
-    let raf = 0;
-
-    const make = () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      v: Math.random() * 0.25 + 0.05,
-      o: Math.random() * 0.35 + 0.15,
-    });
-
-    const init = () => {
-      ps = [];
-      const count = Math.floor((canvas.width * canvas.height) / 9000);
-      for (let i = 0; i < count; i++) ps.push(make());
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ps.forEach((p) => {
-        p.y -= p.v;
-        if (p.y < 0) {
-          p.x = Math.random() * canvas.width;
-          p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.25 + 0.05;
-          p.o = Math.random() * 0.35 + 0.15;
-        }
-        ctx.fillStyle = `rgba(250,250,250,${p.o})`;
-        ctx.fillRect(p.x, p.y, 0.7, 2.2);
-      });
-      raf = requestAnimationFrame(draw);
-    };
-
-    const onResize = () => {
-      setSize();
-      init();
-    };
-
-    window.addEventListener('resize', onResize);
-    init();
-    raf = requestAnimationFrame(draw);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (data: SignUpDto) => {
     setIsLoading(true);
     setError(null);
 
-    const form = new FormData(e.target as HTMLFormElement);
-    const name = form.get('name') as string;
-    const email = form.get('email') as string;
-    const password = form.get('password') as string;
-
     const { error: signUpError } = await signUp.email(
-      { name, email, password },
+      { name: data.name, email: data.email, password: data.password },
       {
-        onRequest: () => console.log('⏳ Creating account...'),
+        onRequest: () => console.log('Creating account...'),
         onSuccess: async (ctx) => {
-          console.log('✅ Zarejestrowano');
+          console.log('Registered');
           if (ctx.data?.user?.id) {
             try {
               await setupUserFolder(ctx.data.user.id);
@@ -144,10 +93,10 @@ export default function SignupCardSection() {
       },
       {
         onRequest: () => {
-          console.log('🔄 Redirecting to GitHub...');
+          console.log('Redirecting to GitHub...');
         },
         onSuccess: async (ctx) => {
-          console.log('✅ Successfully signed in!', ctx);
+          console.log('Successfully signed in!', ctx);
 
           if (ctx.data?.user?.id) {
             try {
@@ -155,19 +104,19 @@ export default function SignupCardSection() {
               const result = await setupUserFolder(ctx.data.user.id);
 
               if (result.success) {
-                console.log('✅ S3 folder created:', result.data);
+                console.log('S3 folder created:', result.data);
               } else {
-                console.error('❌ Failed to create S3 folder:', result.error);
+                console.error('Failed to create S3 folder:', result.error);
                 setError('Account created but workspace setup failed');
               }
             } catch (error) {
-              console.error('❌ Failed to setup folder:', error);
+              console.error('Failed to setup folder:', error);
               setError('Account created but workspace setup failed');
             }
           }
         },
         onError: (ctx) => {
-          console.error('❌ Sign in failed:', ctx.error);
+          console.error('Sign in failed:', ctx.error);
           setError(ctx.error.message || 'Unable to sign up with GitHub');
         },
       },
@@ -177,9 +126,8 @@ export default function SignupCardSection() {
   };
   if (success) {
     return (
-      <section className="fixed inset-0">
-        <canvas ref={canvasRef} className="absolute inset-0 bg-black" />
-        <div className="h-full w-full grid place-items-center px-4">
+      <AuthBackground>
+        <div className="h-full w-full flex flex-col items-center justify-center px-4 flex-grow">
           <Card className="card-animate w-full max-w-md border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
             <CardHeader className="space-y-1">
               <div className="rounded-full bg-green-500/10 p-3 w-fit mx-auto mb-2">
@@ -203,27 +151,37 @@ export default function SignupCardSection() {
             </CardFooter>
           </Card>
         </div>
-      </section>
+      </AuthBackground>
     );
   }
 
   return (
-    <section className="fixed inset-0">
-      <canvas ref={canvasRef} className="absolute inset-0 bg-black" />
-
+    <AuthBackground>
       {/* Centered Signup Card */}
-      <div className="h-full w-full grid place-items-center px-4">
-        <Card className="card-animate w-full max-w-sm border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-white">
-              Create account
-            </CardTitle>
-            <CardDescription className="text-zinc-400">
-              Get started with your free account
-            </CardDescription>
-          </CardHeader>
+      <div className="h-full w-full flex flex-col items-center justify-center px-4 flex-grow">
+        <div className="mb-8 flex flex-col items-center justify-center space-y-4">
+          <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
+            {/* Logo w SVG - białe */}
+            <Image
+              src="/icon/logo.svg"
+              alt="PVC Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10"
+            />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              PVC
+            </h1>
+            <p className="text-xs text-zinc-500 font-mono tracking-widest uppercase mt-1">
+              Prompt Version Control
+            </p>
+          </div>
+        </div>
 
-          <CardContent className="grid gap-5">
+        <Card className="card-animate w-full max-w-sm border-zinc-800 bg-zinc-900/70 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/60">
+          <CardContent className="grid gap-5 pt-6">
             {error && (
               <div className="flex items-center gap-2 p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                 <XCircle className="h-4 w-4 flex-shrink-0" />
@@ -231,22 +189,24 @@ export default function SignupCardSection() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="grid gap-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
               <div className="grid gap-2">
                 <Label htmlFor="name" className="text-zinc-300 label-animate">
                   Full Name
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors" />
                   <Input
                     id="name"
-                    name="name"
                     type="text"
                     placeholder="John Doe"
-                    required
-                    className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    {...register('name')}
                   />
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                 </div>
+                {errors.name && (
+                  <p className="text-xs text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -254,16 +214,18 @@ export default function SignupCardSection() {
                   Email
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors" />
                   <Input
                     id="email"
-                    name="email"
                     type="email"
                     placeholder="you@example.com"
-                    required
-                    className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    {...register('email')}
                   />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                 </div>
+                {errors.email && (
+                  <p className="text-xs text-red-500">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="grid gap-2">
@@ -274,15 +236,14 @@ export default function SignupCardSection() {
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors" />
                   <Input
                     id="password"
-                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="********"
-                    required
-                    className="pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    className="peer pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    {...register('password')}
                   />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
                   <button
                     type="button"
                     aria-label={
@@ -298,6 +259,11 @@ export default function SignupCardSection() {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-xs text-red-500">
+                    {errors.password.message}
+                  </p>
+                )}
                 <p className="text-xs text-zinc-500">
                   Must be at least 8 characters long
                 </p>
@@ -351,6 +317,6 @@ export default function SignupCardSection() {
           </CardFooter>
         </Card>
       </div>
-    </section>
+    </AuthBackground>
   );
 }
