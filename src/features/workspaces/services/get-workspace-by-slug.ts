@@ -19,6 +19,7 @@ export async function getWorkspaceBySlug(
       visibility: true,
       createdAt: true,
       userId: true,
+      securityRules: true,
     },
   });
 }

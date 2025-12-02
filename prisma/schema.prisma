@@ -27,10 +27,22 @@ model User {
   sshKeys       SshKey[]
   workspacesOwned Workspace[]
   contributions WorkspaceContributor[]
+  twoFactorEnabled Boolean? @default(false)
+  twoFactor        TwoFactor?
 
 
   @@unique([email])
   @@map("user")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId])
+  @@map("two_factor")
 }
 
 
@@ -120,7 +132,22 @@ model Workspace {
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   contributors WorkspaceContributor[]
+  securityRules SecurityRule[]
 
   @@unique([userId, slug])
   @@map("workspace")
 }
+
+model SecurityRule {
+  id          String   @id @default(cuid())
+  pattern     String   // e.g. "node_modules", "*.env"
+  category    String?  // "Folders", "Files"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("security_rule")
+} 
