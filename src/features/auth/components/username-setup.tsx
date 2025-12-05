@@ -117,7 +117,7 @@ export default function UsernameSetup() {
       }
 
       // Redirect to home or user profile
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

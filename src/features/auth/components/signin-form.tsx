@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -18,6 +19,7 @@ import { Eye, EyeOff, Github, Lock, Mail, ArrowRight } from 'lucide-react';
 import { signIn } from '@/shared/lib/auth-client';
 
 export default function LoginCardSection() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,13 +99,16 @@ export default function LoginCardSection() {
       { email: data.email, password: data.password },
       {
         onRequest: () => console.log('Signing in...'),
-        onSuccess: () => console.log('Signed in'),
+        onSuccess: () => {
+          console.log('Signed in');
+          router.push('/dashboard');
+        },
         onError: (ctx) => setError(ctx.error.message),
       },
     );
 
     if (signInError) {
-      setError(signInError.message);
+      setError(signInError.message ?? 'An error occurred during sign in');
     }
 
     setIsLoading(false);
@@ -115,9 +120,12 @@ export default function LoginCardSection() {
     try {
       const { error: socialError } = await signIn.social({
         provider: 'github',
+        callbackURL: '/dashboard',
       });
       if (socialError) {
-        setError(socialError.message);
+        setError(
+          socialError.message ?? 'An error occurred during GitHub sign in',
+        );
       }
     } catch (err) {
       setError('Unable to sign in with GitHub.');
