@@ -15,12 +15,12 @@ export async function createUserFolder(userId: string) {
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: folderKey,
-      Body: '', // Pusty content dla folderu
+      Body: '',
     });
 
     await s3Client.send(command);
 
-    console.log(`✅ Folder created: ${folderKey}`); // Poprawiony template literal
+    console.log(`✅ Folder created: ${folderKey}`);
     return { success: true, path: folderKey };
   } catch (error) {
     console.error('❌ Error creating folder:', error);

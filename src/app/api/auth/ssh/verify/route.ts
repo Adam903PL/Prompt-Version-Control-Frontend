@@ -25,6 +25,7 @@ export async function POST(req: Request) {
 
     const key = await prisma.sshKey.findUnique({
       where: { fingerprint },
+      include: { user: true },
     });
 
     if (!key) {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Verify challenge hasn't expired
-    const verification = await prisma.verification.findUnique({
+    const verification = await prisma.verification.findFirst({
       where: { identifier: `ssh-${fingerprint}` },
     });
 
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
           ok: true,
           sessionToken: session.token,
           userId: key.userId,
+          username: key.user.username || key.user.name,
         },
         { status: 200 },
       );

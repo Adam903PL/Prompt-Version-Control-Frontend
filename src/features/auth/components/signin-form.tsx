@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Image from 'next/image';
 import {
   SignInSchema,
   type SignInDto,
@@ -16,80 +16,30 @@ import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Separator } from '@/shared/components/ui/separator';
 import { Eye, EyeOff, Github, Lock, Mail, ArrowRight } from 'lucide-react';
-import { signIn } from '@/shared/lib/auth-client';
+import { signIn, twoFactor } from '@/shared/lib/auth-client';
+import { useRouter } from 'next/navigation';
+
+import { AuthBackground } from '@/shared/components/ui/auth-background';
 
 export default function LoginCardSection() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTwoFactor, setIsTwoFactor] = useState(false);
+  const [otp, setOtp] = useState('');
+  const router = useRouter();
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<SignInDto>({
     resolver: zodResolver(SignInSchema),
+    defaultValues: {
+      rememberMe: false,
+    },
   });
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
-    const setSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    setSize();
-
-    type P = { x: number; y: number; v: number; o: number };
-    let ps: P[] = [];
-    let raf = 0;
-
-    const make = () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      v: Math.random() * 0.25 + 0.05,
-      o: Math.random() * 0.35 + 0.15,
-    });
-
-    const init = () => {
-      ps = [];
-      const count = Math.floor((canvas.width * canvas.height) / 9000);
-      for (let i = 0; i < count; i++) ps.push(make());
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ps.forEach((p) => {
-        p.y -= p.v;
-        if (p.y < 0) {
-          p.x = Math.random() * canvas.width;
-          p.y = canvas.height + Math.random() * 40;
-          p.v = Math.random() * 0.25 + 0.05;
-          p.o = Math.random() * 0.35 + 0.15;
-        }
-        ctx.fillStyle = `rgba(250,250,250,${p.o})`;
-        ctx.fillRect(p.x, p.y, 0.7, 2.2);
-      });
-      raf = requestAnimationFrame(draw);
-    };
-
-    const onResize = () => {
-      setSize();
-      init();
-    };
-
-    window.addEventListener('resize', onResize);
-    init();
-    raf = requestAnimationFrame(draw);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
 
   const onSubmit = async (data: SignInDto) => {
     setIsLoading(true);
@@ -99,18 +49,69 @@ export default function LoginCardSection() {
       { email: data.email, password: data.password },
       {
         onRequest: () => console.log('Signing in...'),
-        onSuccess: () => {
-          console.log('Signed in');
-          router.push('/dashboard');
+        onSuccess: async (ctx) => {
+          if (ctx.data.twoFactorRedirect) {
+            setIsTwoFactor(true);
+            return;
+          }
+          console.log('Signed in', ctx.data);
+          // Check if 2FA is enabled for the user
+          if (ctx.data.user.twoFactorEnabled) {
+            router.push('/dashboard');
+          } else {
+            // Redirect to settings to setup 2FA
+            router.push('/dashboard/settings');
+          }
         },
-        onError: (ctx) => setError(ctx.error.message),
+        onError: (ctx) => {
+          if (
+            ctx.error.code === 'TWO_FACTOR_REQUIRED' ||
+            ctx.error.message?.includes('2FA')
+          ) {
+            setIsTwoFactor(true);
+          } else {
+            setError(ctx.error.message || 'Unknown error');
+          }
+        },
       },
     );
 
     if (signInError) {
-      setError(signInError.message ?? 'An error occurred during sign in');
+      // Handled in onError callback mostly, but check here too just in case
+      if (
+        signInError.code === 'TWO_FACTOR_REQUIRED' ||
+        signInError.message?.includes('2FA')
+      ) {
+        setIsTwoFactor(true);
+      } else {
+        setError(signInError.message || 'An error occurred');
+      }
     }
 
+    setIsLoading(false);
+  };
+
+  const handleTwoFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const { error: verifyError } = await twoFactor.verifyOtp(
+      {
+        code: otp,
+        trustDevice: true,
+      },
+      {
+        onSuccess: () => {
+          router.push('/dashboard');
+        },
+        onError: (ctx) => setError(ctx.error.message || 'Verification failed'),
+      },
+    );
+
+    if (verifyError) {
+      setError(verifyError.message || 'Verification failed');
+    }
     setIsLoading(false);
   };
 
@@ -120,14 +121,11 @@ export default function LoginCardSection() {
     try {
       const { error: socialError } = await signIn.social({
         provider: 'github',
-        callbackURL: '/dashboard',
       });
       if (socialError) {
-        setError(
-          socialError.message ?? 'An error occurred during GitHub sign in',
-        );
+        setError(socialError.message || 'Unknown error');
       }
-    } catch (err) {
+    } catch {
       setError('Unable to sign in with GitHub.');
     } finally {
       setIsLoading(false);
@@ -135,13 +133,19 @@ export default function LoginCardSection() {
   };
 
   return (
-    <section className="fixed inset-0">
+    <AuthBackground>
       {/* Centered Login Card */}
-      <div className="h-full w-full flex flex-col items-center justify-center px-4">
+      <div className="h-full w-full flex flex-col items-center justify-center px-4 flex-grow">
         <div className="mb-8 flex flex-col items-center justify-center space-y-4">
           <div className="p-3 bg-white/5 border border-white/10 rounded-xl">
             {/* Logo w SVG - białe */}
-            <img src="/icon/logo.svg" alt="PVC Logo" className="w-10 h-10" />
+            <Image
+              src="/icon/logo.svg"
+              alt="PVC Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10"
+            />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-white">
@@ -161,108 +165,154 @@ export default function LoginCardSection() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
-              <div className="grid gap-2">
-                <Label htmlFor="email" className="text-zinc-300 label-animate">
-                  Email
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
-                    {...register('email')}
-                  />
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
-                </div>
-                {errors.email && (
-                  <p className="text-xs text-red-500">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label
-                  htmlFor="password"
-                  className="text-zinc-300 label-animate"
-                >
-                  Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="********"
-                    className="peer pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
-                    {...register('password')}
-                  />
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
-                  <button
-                    type="button"
-                    aria-label={
-                      showPassword ? 'Hide password' : 'Show password'
-                    }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-zinc-400 hover:text-zinc-200 transition-all hover:scale-110"
-                    onClick={() => setShowPassword((v) => !v)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-xs text-red-500">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="remember"
-                    className="border-zinc-700 data-[state=checked]:bg-zinc-50 data-[state=checked]:text-zinc-900 transition-all"
-                    onCheckedChange={(checked) => {
-                      // Manually handle checkbox if needed or register it
-                      // For now, just keeping UI consistent, or register 'rememberMe'
-                    }}
-                    {...register('rememberMe')}
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-zinc-400 cursor-pointer hover:text-zinc-300 transition-colors"
-                  >
-                    Remember me
+            {isTwoFactor ? (
+              <form onSubmit={handleTwoFactorSubmit} className="grid gap-5">
+                <div className="grid gap-2">
+                  <Label htmlFor="otp" className="text-zinc-300 label-animate">
+                    Verification Code
                   </Label>
+                  <div className="relative">
+                    <Input
+                      id="otp"
+                      type="text"
+                      placeholder="123456"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                    />
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
+                  </div>
                 </div>
-                <a
-                  href="#"
-                  className="text-sm text-zinc-300 hover:text-zinc-100 transition-colors underline-offset-4 hover:underline"
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="glow-button w-full h-10 rounded-lg bg-zinc-50 text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
                 >
-                  Forgot password?
-                </a>
-              </div>
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-zinc-900 border-t-transparent rounded-full loading-spinner mr-2" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify Code
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5">
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="email"
+                    className="text-zinc-300 label-animate"
+                  >
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      className="peer pl-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                      {...register('email')}
+                    />
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
+                  </div>
+                  {errors.email && (
+                    <p className="text-xs text-red-500">
+                      {errors.email.message}
+                    </p>
+                  )}
+                </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="glow-button w-full h-10 rounded-lg bg-zinc-50 text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-zinc-900 border-t-transparent rounded-full loading-spinner mr-2" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </form>
+                <div className="grid gap-2">
+                  <Label
+                    htmlFor="password"
+                    className="text-zinc-300 label-animate"
+                  >
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="********"
+                      className="peer pl-10 pr-10 bg-zinc-950 border-zinc-800 text-zinc-50 placeholder:text-zinc-600 input-focus"
+                      {...register('password')}
+                    />
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 transition-colors peer-focus:text-zinc-300" />
+                    <button
+                      type="button"
+                      aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                      }
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md text-zinc-400 hover:text-zinc-200 transition-all hover:scale-110"
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-xs text-red-500">
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Controller
+                      control={control}
+                      name="rememberMe"
+                      render={({ field }) => (
+                        <Checkbox
+                          id="remember"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="border-zinc-700 data-[state=checked]:bg-zinc-50 data-[state=checked]:text-zinc-900 transition-all"
+                        />
+                      )}
+                    />
+                    <Label
+                      htmlFor="remember"
+                      className="text-zinc-400 cursor-pointer hover:text-zinc-300 transition-colors"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                  <a
+                    href="#"
+                    className="text-sm text-zinc-300 hover:text-zinc-100 transition-colors underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="glow-button w-full h-10 rounded-lg bg-zinc-50 text-zinc-900 hover:bg-zinc-200 disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-zinc-900 border-t-transparent rounded-full loading-spinner mr-2" />
+                      Continue
+                    </>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
 
             <div className="relative">
               <Separator className="bg-zinc-800" />
@@ -293,6 +343,6 @@ export default function LoginCardSection() {
           </CardFooter>
         </Card>
       </div>
-    </section>
+    </AuthBackground>
   );
 }
