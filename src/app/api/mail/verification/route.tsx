@@ -8,7 +8,7 @@ import cryptoUB from 'crypto';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST(_req: Request) {
+export async function POST() {
   try {
     // 1. Validate Authentication
     const session = await auth.api.getSession({
@@ -28,16 +28,9 @@ export async function POST(_req: Request) {
       );
     }
 
-    // 2. Generate secure token
     const token = cryptoUB.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiration
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // 3. Save verification token to DB
-    // Check if verification already exists for this identifier (userId) to allow re-sending
-    // prisma.verification model uses identifier as unique.
-    // We'll use user.id as the identifier for simplicity and uniqueness per user verification flow.
-
-    // Cleanup old tokens first if any
     await prisma.verification.deleteMany({
       where: { identifier: user.id },
     });
@@ -45,19 +38,17 @@ export async function POST(_req: Request) {
     await prisma.verification.create({
       data: {
         id: cryptoUB.randomUUID(),
-        identifier: user.id, // Using user.id as identifier to link it back easily
+        identifier: user.id,
         value: token,
         expiresAt: expiresAt,
       },
     });
 
-    // 4. Construct Link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const verificationLink = `${baseUrl}/account-verification?token=${token}`;
 
-    // 5. Send Email
     const { error } = await resend.emails.send({
-      from: 'PVC <noreply@mail.adampukaluk.pl>', // Ensure this domain is verified in Resend
+      from: 'PVC <noreply@mail.adampukaluk.pl>',
       to: [user.email],
       subject: 'Verify your email address',
       react: (

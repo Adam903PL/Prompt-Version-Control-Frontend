@@ -33,6 +33,9 @@ model User {
   telegramTokens TelegramToken[]
   userTelegrams UserTelegram[]
 
+  receivedInvitations WorkspaceInvitation[] @relation("ReceivedInvitations")
+  sentInvitations     WorkspaceInvitation[] @relation("SentInvitations")
+
   @@unique([email])
   @@map("user")
 }
@@ -110,7 +113,7 @@ model SshKey {
 
 model WorkspaceContributor {
   id        String   @id @default(cuid())
-  role      String   @default("contributor") // owner, maintainer, contributor
+  role      String   @default("member") // owner, co-owner, moderator, member
   addedAt   DateTime @default(now())
 
   workspaceId String
@@ -126,8 +129,7 @@ model Workspace {
   id          String   @id @default(cuid())
   name        String?
   slug        String   @default("workspace")
-  createdAt   DateTime @default(now())
-  visibility  String   @default("public") 
+  createdAt   DateTime @default(now()) 
   description String?
   
   
@@ -138,6 +140,27 @@ model Workspace {
 
   @@unique([userId, slug])
   @@map("workspace")
+  invitations WorkspaceInvitation[]
+}
+
+model WorkspaceInvitation {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  inviteeId String
+  invitee   User   @relation("ReceivedInvitations", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  inviterId String
+  inviter   User   @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_invitation")
 }
 
 model SecurityRule {

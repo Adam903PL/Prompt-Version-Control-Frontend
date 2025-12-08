@@ -58,12 +58,6 @@ export default async function WorkspaceOverviewPage({
               <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
                 {workspace.name}
               </h1>
-              <Badge
-                variant="outline"
-                className="capitalize border-zinc-700 bg-zinc-900/50 text-zinc-400 px-2 py-0.5 text-xs font-mono"
-              >
-                {workspace.visibility}
-              </Badge>
             </div>
             <p className="text-zinc-400 text-sm max-w-xl leading-relaxed">
               {workspace.description || 'No description provided.'}

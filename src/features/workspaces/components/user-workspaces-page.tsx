@@ -22,7 +22,6 @@ interface Workspace {
   name: string | null;
   slug: string;
   description: string | null;
-  visibility: string;
   createdAt: Date;
 }
 
@@ -111,8 +110,6 @@ export default async function UserWorkspacesPage({
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-2 text-sm text-zinc-500">
-                      <span className="capitalize">{workspace.visibility}</span>
-                      <span>•</span>
                       <span>
                         {new Date(workspace.createdAt).toLocaleDateString()}
                       </span>
