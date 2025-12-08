@@ -19,6 +19,11 @@ export async function getWorkspaceBySlug(
       createdAt: true,
       userId: true,
       securityRules: true,
+      _count: {
+        select: {
+          leaks: true,
+        },
+      },
     },
   });
 }

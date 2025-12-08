@@ -132,15 +132,16 @@ model Workspace {
   createdAt   DateTime @default(now()) 
   description String?
   
-  
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   contributors WorkspaceContributor[]
   securityRules SecurityRule[]
 
+  invitations WorkspaceInvitation[]
+  leaks       WorkspaceLeak[]
+
   @@unique([userId, slug])
   @@map("workspace")
-  invitations WorkspaceInvitation[]
 }
 
 model WorkspaceInvitation {
@@ -161,6 +162,26 @@ model WorkspaceInvitation {
   inviter   User   @relation("SentInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
 
   @@map("workspace_invitation")
+}
+
+model WorkspaceLeak {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  severity    String   // low, medium, high
+  message     String
+  snippet     String?
+  source      String
+  username    String?
+
+  ruleId      String?
+  sessionId   String?
+
+  detectedAt  DateTime @default(now())
+
+  @@map("workspace_leak")
+  @@index([workspaceId])
 }
 
 model SecurityRule {

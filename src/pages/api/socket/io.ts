@@ -103,6 +103,26 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponseServerIO) => {
           msg,
         );
 
+        // Save to Database
+        try {
+          await prisma.workspaceLeak.create({
+            data: {
+              workspaceId: workspace.id,
+              severity: msg.severity,
+              message: msg.message,
+              snippet: msg.snippet,
+              source: msg.source,
+              username: msg.username,
+              ruleId: msg.ruleId,
+              sessionId: msg.sessionId,
+              detectedAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            },
+          });
+          console.log('✅ Leak saved to database');
+        } catch (dbError) {
+          console.error('❌ Failed to save leak to database:', dbError);
+        }
+
         io.to(workspace.id).emit('dashboard:leak_alert', msg);
 
         try {
