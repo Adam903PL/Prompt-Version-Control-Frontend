@@ -1,5 +1,6 @@
 import { TwoFactorSetup } from '@/features/auth/components/two-factor-setup';
 import { EmailVerificationSettings } from '@/features/auth/components/email-verification-settings';
+import { PasskeySettings } from '@/features/auth/components/passkey-settings';
 
 export default function SettingsPage() {
   return (
@@ -10,6 +11,10 @@ export default function SettingsPage() {
 
       <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800">
         <TwoFactorSetup />
+      </div>
+
+      <div className="pt-6">
+        <PasskeySettings />
       </div>
     </div>
   );

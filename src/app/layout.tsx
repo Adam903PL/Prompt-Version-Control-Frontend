@@ -4,6 +4,7 @@ import './globals.css';
 import Threads from '@/shared/components/Threads';
 import { UsernameGuard } from '@/features/auth/components/username-guard';
 import PageTransition from '@/shared/components/ui/page-transition';
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -46,6 +47,7 @@ export default function RootLayout({
         <div style={{ position: 'relative', zIndex: 1 }}>
           <UsernameGuard />
           <PageTransition>{children}</PageTransition>
+          <Toaster position="top-center" richColors />
         </div>
       </body>
     </html>

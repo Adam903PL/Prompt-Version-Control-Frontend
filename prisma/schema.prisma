@@ -32,9 +32,26 @@ model User {
 
   telegramTokens TelegramToken[]
   userTelegrams UserTelegram[]
+  passkeys      Passkey[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Passkey {
+  id             String   @id
+  name           String?
+  publicKey      String
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webauthnUserID String
+  counter        Int
+  deviceType     String
+  backedUp       Boolean
+  transports     String?
+  createdAt      DateTime?
+
+  @@map("passkey")
 }
 
 model TwoFactor {
