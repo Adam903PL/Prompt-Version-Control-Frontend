@@ -11,7 +11,17 @@ import {
   TabsTrigger,
 } from '@/shared/components/ui/tabs';
 import Link from 'next/link';
-import { ChevronRight, LayoutGrid, Settings } from 'lucide-react';
+import {
+  ChevronRight,
+  LayoutGrid,
+  Settings,
+  Building2,
+  Users,
+} from 'lucide-react';
+import { WorkspaceGeneralSettings } from '@/features/workspaces/components/workspace-general-settings';
+import { WorkspaceContributorsSettings } from '@/features/workspaces/components/workspace-contributors-settings';
+import { auth } from '@/shared/lib/auth';
+import { headers } from 'next/headers';
 
 interface WorkspaceSettingsPageProps {
   params: Promise<{ workspaceSlug: string }>;
@@ -22,10 +32,19 @@ export default async function WorkspaceSettingsPage({
 }: WorkspaceSettingsPageProps) {
   const { workspaceSlug } = await params;
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   const workspace = await prisma.workspace.findFirst({
     where: { slug: workspaceSlug },
     include: {
       securityRules: true,
+      contributors: {
+        include: {
+          user: true,
+        },
+      },
     },
   });
 
@@ -69,11 +88,32 @@ export default async function WorkspaceSettingsPage({
         </div>
       </div>
 
-      <Tabs defaultValue="security" className="w-full">
+      <Tabs defaultValue="general" className="w-full">
         <TabsList className="bg-zinc-900/50 border border-zinc-800">
+          <TabsTrigger value="general">
+            <Building2 className="w-4 h-4 mr-2" /> General
+          </TabsTrigger>
+          <TabsTrigger value="contributors">
+            <Users className="w-4 h-4 mr-2" /> Team
+          </TabsTrigger>
           <TabsTrigger value="security">Security Policy</TabsTrigger>
           <TabsTrigger value="telegram">Telegram Notifications</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="general" className="mt-6">
+          {/* @ts-expect-error Prisma Client outdated (locked dll), image field exists in DB */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <WorkspaceGeneralSettings workspace={workspace as any} />
+        </TabsContent>
+
+        <TabsContent value="contributors" className="mt-6">
+          <WorkspaceContributorsSettings
+            workspaceId={workspace.id}
+            currentUserId={session?.user?.id || ''}
+            ownerId={workspace.userId}
+            contributors={workspace.contributors}
+          />
+        </TabsContent>
 
         <TabsContent value="security" className="mt-6">
           <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800">
