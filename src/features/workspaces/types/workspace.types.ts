@@ -6,6 +6,7 @@ export interface WorkspaceContributorInput {
 export interface CreateWorkspaceInput {
   name: string;
   description?: string;
+  image?: string;
   userId: string;
   contributors?: WorkspaceContributorInput[];
 }

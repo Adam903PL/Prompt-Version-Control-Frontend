@@ -11,8 +11,17 @@ import {
   TabsTrigger,
 } from '@/shared/components/ui/tabs';
 import Link from 'next/link';
-import { ChevronRight, LayoutGrid, Settings } from 'lucide-react';
-import { InviteWorkspaceMemberForm } from '@/features/workspaces/components/invite-workspace-member-form';
+import {
+  ChevronRight,
+  LayoutGrid,
+  Settings,
+  Building2,
+  Users,
+} from 'lucide-react';
+import { WorkspaceGeneralSettings } from '@/features/workspaces/components/workspace-general-settings';
+import { WorkspaceContributorsSettings } from '@/features/workspaces/components/workspace-contributors-settings';
+import { auth } from '@/shared/lib/auth';
+import { headers } from 'next/headers';
 
 interface WorkspaceSettingsPageProps {
   params: Promise<{ workspaceSlug: string }>;
@@ -22,6 +31,10 @@ export default async function WorkspaceSettingsPage({
   params,
 }: WorkspaceSettingsPageProps) {
   const { workspaceSlug } = await params;
+
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   const workspace = await prisma.workspace.findFirst({
     where: { slug: workspaceSlug },
@@ -75,51 +88,31 @@ export default async function WorkspaceSettingsPage({
         </div>
       </div>
 
-      <Tabs defaultValue="members" className="w-full">
+      <Tabs defaultValue="general" className="w-full">
         <TabsList className="bg-zinc-900/50 border border-zinc-800">
-          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="general">
+            <Building2 className="w-4 h-4 mr-2" /> General
+          </TabsTrigger>
+          <TabsTrigger value="contributors">
+            <Users className="w-4 h-4 mr-2" /> Team
+          </TabsTrigger>
           <TabsTrigger value="security">Security Policy</TabsTrigger>
           <TabsTrigger value="telegram">Telegram Notifications</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="members" className="mt-6 space-y-6">
-          <InviteWorkspaceMemberForm workspaceId={workspace.id} />
+        <TabsContent value="general" className="mt-6">
+          {/* @ts-expect-error Prisma Client outdated (locked dll), image field exists in DB */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <WorkspaceGeneralSettings workspace={workspace as any} />
+        </TabsContent>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-            <div className="p-4 border-b border-zinc-800 bg-zinc-900/30">
-              <h3 className="font-medium text-zinc-200">Current Members</h3>
-            </div>
-            <div className="divide-y divide-zinc-800">
-              {workspace.contributors.map((contributor) => (
-                <div
-                  key={contributor.id}
-                  className="p-4 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-400">
-                      {contributor.user.username?.[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-zinc-200">
-                        {contributor.user.username || contributor.user.email}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {contributor.user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-zinc-400 capitalize bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
-                    {contributor.role}
-                  </div>
-                </div>
-              ))}
-              {workspace.contributors.length === 0 && (
-                <div className="p-8 text-center text-zinc-500 text-sm">
-                  No members found.
-                </div>
-              )}
-            </div>
-          </div>
+        <TabsContent value="contributors" className="mt-6">
+          <WorkspaceContributorsSettings
+            workspaceId={workspace.id}
+            currentUserId={session?.user?.id || ''}
+            ownerId={workspace.userId}
+            contributors={workspace.contributors}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="mt-6">

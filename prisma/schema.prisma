@@ -134,6 +134,8 @@ model Workspace {
   createdAt   DateTime @default(now())
   description String?
 
+  image       String?
+
   userId        String
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   contributors  WorkspaceContributor[]
