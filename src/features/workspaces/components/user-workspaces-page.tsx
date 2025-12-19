@@ -86,52 +86,61 @@ export default async function UserWorkspacesPage({
         </Link>
       </div>
 
-      {user.workspacesOwned.length === 0 ? (
-        <Card className="bg-zinc-900/40 backdrop-blur-xl border-dashed border-2 border-zinc-800/50 flex flex-col items-center text-center p-12">
-          <div className="h-16 w-16 bg-zinc-800/50 rounded-full flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-            <LayoutDashboard className="h-8 w-8 text-zinc-400" />
-          </div>
-          <h3 className="text-xl font-bold text-white mb-2">
-            No workspaces found
-          </h3>
-          <p className="text-zinc-400 mb-8 max-w-sm">
-            You haven&apos;t created any workspaces yet. Get started by creating
-            your first workspace to organize your prompts.
-          </p>
-          <Link href={`/dashboard/workspaces/new`}>
-            <Button className="bg-gradient-to-r from-zinc-100 to-white hover:from-white hover:to-zinc-100 text-black font-medium shadow-lg shadow-white/10 transition-all px-8 py-6 h-auto text-base">
-              Create Your First Workspace
-            </Button>
-          </Link>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {user.workspacesOwned.map((workspace) => (
-            <Link
-              key={workspace.id}
-              href={`/dashboard/workspaces/${workspace.slug}`}
-            >
-              <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50 hover:border-zinc-700/50 transition-all cursor-pointer h-full">
-                <CardHeader>
-                  <CardTitle className="text-xl text-zinc-100">
-                    {workspace.name}
-                  </CardTitle>
-                  <CardDescription className="text-zinc-400">
-                    {workspace.description || 'No description'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm text-zinc-500">
-                    <span>
-                      {new Date(workspace.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-zinc-200">Workspaces</h2>
+          <Button
+            asChild
+            className="bg-gradient-to-r from-zinc-100 to-white hover:from-white hover:to-zinc-100 text-black font-medium shadow-lg shadow-white/10 transition-all"
+          >
+            <Link href={`/dashboard/workspaces/new`}>Create Workspace</Link>
+          </Button>
         </div>
-      )}
+
+        {user.workspacesOwned.length === 0 ? (
+          <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50">
+            <CardContent className="py-12 text-center">
+              <p className="text-zinc-400 mb-4">No workspaces yet</p>
+              <Button
+                asChild
+                className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-200 hover:bg-zinc-700/50 hover:text-white backdrop-blur-sm transition-all"
+              >
+                <Link href={`/dashboard/workspaces/new`}>
+                  Create Your First Workspace
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {user.workspacesOwned.map((workspace) => (
+              <Link
+                key={workspace.id}
+                href={`/dashboard/workspaces/${workspace.slug}`}
+              >
+                <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50 hover:border-zinc-700/50 transition-all cursor-pointer h-full">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-zinc-100">
+                      {workspace.name}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-400">
+                      {workspace.description || 'No description'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                      <span className="capitalize">{workspace.visibility}</span>
+                      <span>•</span>
+                      <span>
+                        {new Date(workspace.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

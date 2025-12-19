@@ -4,6 +4,7 @@ import './globals.css';
 import Threads from '@/shared/components/Threads';
 import { UsernameGuard } from '@/features/auth/components/username-guard';
 import PageTransition from '@/shared/components/ui/page-transition';
+import { Toaster } from 'sonner';
 import { SnowfallEffect } from '@/shared/components/snowfall-effect';
 import { Toaster } from '@/shared/components/ui/sonner';
 
@@ -51,6 +52,7 @@ export default function RootLayout({
           <UsernameGuard />
 
           <PageTransition>{children}</PageTransition>
+          <Toaster position="top-center" richColors />
         </div>
       </body>
     </html>

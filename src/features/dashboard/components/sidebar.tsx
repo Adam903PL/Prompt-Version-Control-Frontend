@@ -100,6 +100,7 @@ export function Sidebar({ className }: SidebarProps) {
               className="w-6 h-6"
             />
           </div>
+
         </div>
         <div
           className={cn(

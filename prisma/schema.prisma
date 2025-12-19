@@ -30,14 +30,10 @@ model User {
   twoFactorEnabled Boolean?               @default(false)
   twoFactor        TwoFactor?
 
+  // --- Billing & Organizations (Billing Branch) ---
   plan               String  @default("free")
   stripeCustomerId   String?
   subscriptionStatus String?
-
-  telegramTokens TelegramToken[]
-  userTelegrams  UserTelegram[]
-
-  passkeys Passkey[]
 
   receivedInvitations WorkspaceInvitation[] @relation("ReceivedInvitations")
   sentInvitations     WorkspaceInvitation[] @relation("SentInvitations")
@@ -46,8 +42,34 @@ model User {
   sentOrgInvitations      OrganizationInvitation[] @relation("SentOrganizationInvitations")
   receivedOrgInvitations  OrganizationInvitation[] @relation("ReceivedOrganizationInvitations")
 
+  // --- Auth Features (Auth Branch) ---
+  telegramTokens TelegramToken[]
+  userTelegrams  UserTelegram[]
+  passkeys       Passkey[]
+
   @@unique([email])
   @@map("user")
+}
+
+// --- Modified Passkey (Auth Branch - Fixed Version) ---
+model Passkey {
+  id        String  @id
+  name      String?
+  publicKey String
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // New fields required by better-auth v1+
+  credentialID String
+  aaguid       String
+
+  counter    Int
+  deviceType String
+  backedUp   Boolean
+  transports String?
+  createdAt  DateTime?
+
+  @@map("passkey")
 }
 
 model TwoFactor {
@@ -121,7 +143,9 @@ model SshKey {
 
 model WorkspaceContributor {
   id      String   @id @default(cuid())
+
   role    String   @default("member") // owner, co-owner, moderator, member
+
   addedAt DateTime @default(now())
 
   workspaceId String
@@ -140,13 +164,16 @@ model Workspace {
   createdAt   DateTime @default(now())
   description String?
 
+
   image       String?
+
 
   userId        String
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   contributors  WorkspaceContributor[]
   securityRules SecurityRule[]
 
+  // Billing Branch Relations
   invitations WorkspaceInvitation[]
   leaks       WorkspaceLeak[]
 
@@ -156,6 +183,8 @@ model Workspace {
   @@unique([userId, slug])
   @@map("workspace")
 }
+
+// --- Invitations & Leaks (Billing Branch) ---
 
 model WorkspaceInvitation {
   id        String   @id @default(cuid())
@@ -199,8 +228,8 @@ model WorkspaceLeak {
 
 model SecurityRule {
   id          String   @id @default(cuid())
-  pattern     String
-  category    String?
+  pattern     String // e.g. "node_modules", "*.env"
+  category    String? // "Folders", "Files"
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -210,6 +239,8 @@ model SecurityRule {
 
   @@map("security_rule")
 }
+
+// --- Telegram (Auth Branch) ---
 
 model TelegramToken {
   id        String   @id @default(cuid())
@@ -227,6 +258,8 @@ model UserTelegram {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
+
+// --- Organizations (Billing Branch) ---
 
 model Organization {
   id                 String   @id @default(cuid())

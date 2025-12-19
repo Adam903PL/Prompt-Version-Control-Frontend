@@ -4,6 +4,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { prisma } from './prisma';
 import { createUserFolder } from '../../features/auth/services/user-file-structure-service';
 import { twoFactor } from 'better-auth/plugins';
+import { passkey } from '@better-auth/passkey';
 
 export const auth = betterAuth({
   emailAndPassword: {
@@ -39,6 +40,18 @@ export const auth = betterAuth({
   plugins: [
     twoFactor({
       issuer: 'PVC',
+    }),
+    passkey({
+      rpID: process.env.NEXT_PUBLIC_APP_URL
+        ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
+        : 'localhost',
+      rpName: 'PVC',
+      origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform',
+        residentKey: 'preferred',
+        userVerification: 'required',
+      },
     }),
   ],
 });

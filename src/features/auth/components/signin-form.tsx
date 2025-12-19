@@ -15,7 +15,16 @@ import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Separator } from '@/shared/components/ui/separator';
-import { Eye, EyeOff, Github, Lock, Mail, ArrowRight } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  Github,
+  Lock,
+  Mail,
+  ArrowRight,
+  Fingerprint,
+  ScanFace,
+} from 'lucide-react';
 import { signIn, twoFactor } from '@/shared/lib/auth-client';
 import { useRouter } from 'next/navigation';
 
@@ -127,6 +136,30 @@ export default function LoginCardSection() {
       }
     } catch {
       setError('Unable to sign in with GitHub.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasskeySignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { error } = await signIn.passkey({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push('/dashboard');
+          },
+        },
+      });
+      if (error) {
+        setError(
+          error.message ||
+            'Failed to sign in. Ensure you have registered Windows Hello in Settings.',
+        );
+      }
+    } catch {
+      setError('An error occurred during passkey sign in');
     } finally {
       setIsLoading(false);
     }
@@ -329,6 +362,20 @@ export default function LoginCardSection() {
             >
               <Github className="h-4 w-4 mr-2" />
               Continue with GitHub
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handlePasskeySignIn}
+              variant="outline"
+              className="w-full h-10 rounded-lg border-zinc-800 bg-zinc-900/50 text-zinc-100 hover:bg-zinc-800 hover:border-blue-900/50 hover:text-blue-100 transition-all duration-300 group relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-900/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              <div className="flex items-center justify-center gap-2 relative z-10">
+                <ScanFace className="h-4 w-4 text-blue-400/80 group-hover:text-blue-400" />
+                <Fingerprint className="h-4 w-4 text-blue-400/80 group-hover:text-blue-400" />
+                <span className="ml-1">Continue with Windows Hello</span>
+              </div>
             </Button>
           </CardContent>
 
