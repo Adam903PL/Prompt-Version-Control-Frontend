@@ -6,6 +6,8 @@ import type { CreateWorkspaceInput } from '@/features/workspaces/types';
 import { createWorkspaceFolder } from '@/features/workspaces/services/setup-folder-aws';
 import { s3Client } from '@/shared/lib/s3-client';
 import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { getWorkspaceReport } from '@/features/workspaces/services/get-workspace-report';
+import { listWorkspaceReportDates } from '@/features/workspaces/services/list-workspace-report-dates';
 
 // nie pamietam do czego to było ale skoro tu jest to mozliwe że jakas funckja jej używa nie dotykać
 
@@ -34,71 +36,64 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Find workspace to get ID and verify access
+  const workspace = await prisma.workspace.findFirst({
+    where: {
+      slug: workspaceName,
+      userId: session.user.id,
+    },
+    select: { id: true },
+  });
+
+  if (!workspace) {
+    return NextResponse.json(
+      { error: 'Workspace not found or access denied' },
+      { status: 404 },
+    );
+  }
+
   const bucket = process.env.AWS_BUCKET_NAME;
 
   if (!bucket) {
     return NextResponse.json({ error: 'Missing bucket name' }, { status: 500 });
   }
 
-  const basePrefix = `pvc/users/${session.user.id}/workspaces/${workspaceName}/`;
+  // New structure uses helpers that handle the prefix logic:
+  // pvc/workspaces/{workspaceId}/{userId}/{date}/report.json
 
   try {
     if (date) {
-      const key = `${basePrefix}${date}/report.json`;
-      const response = await s3Client.send(
-        new GetObjectCommand({
-          Bucket: bucket,
-          Key: key,
-        }),
+      const report = await getWorkspaceReport(
+        workspace.id,
+        session.user.id,
+        date,
       );
-
-      const body = await response.Body?.transformToString();
 
       return NextResponse.json({
         ok: true,
         userId: session.user.id,
         workspaceName,
         date,
-        data: body ? JSON.parse(body) : null,
+        data: report,
       });
     }
 
-    const listResponse = await s3Client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: basePrefix,
-        Delimiter: '/',
-      }),
+    const dateFolders = await listWorkspaceReportDates(
+      workspace.id,
+      session.user.id,
     );
-
-    const dateFolders =
-      listResponse.CommonPrefixes?.map((prefix) =>
-        prefix.Prefix?.slice(basePrefix.length).replace(/\/$/, ''),
-      ).filter(Boolean) ?? [];
 
     const reports = await Promise.all(
       dateFolders.map(async (dateFolder) => {
-        const key = `${basePrefix}${dateFolder}/report.json`;
-        try {
-          const response = await s3Client.send(
-            new GetObjectCommand({
-              Bucket: bucket,
-              Key: key,
-            }),
-          );
-          const body = await response.Body?.transformToString();
-          return {
-            date: dateFolder,
-            data: body ? JSON.parse(body) : null,
-          };
-        } catch (err) {
-          const errorMessage =
-            err instanceof Error ? err.message : 'Failed to fetch report';
-          return {
-            date: dateFolder,
-            error: errorMessage,
-          };
-        }
+        const report = await getWorkspaceReport(
+          workspace.id,
+          session.user.id,
+          dateFolder,
+        );
+        return {
+          date: dateFolder,
+          data: report,
+        };
       }),
     );
 
@@ -108,10 +103,12 @@ export async function GET(request: NextRequest) {
       workspaceName,
       reports,
     });
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Failed to fetch workspace json';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  } catch (err) {
+    console.error('Error fetching reports:', err);
+    return NextResponse.json(
+      { error: 'Failed to fetch reports' },
+      { status: 500 },
+    );
   }
 }
 
@@ -145,7 +142,7 @@ export async function POST(request: NextRequest) {
     const workspaceData: CreateWorkspaceInput = {
       name: body.name,
       description: body.description,
-      visibility: body.visibility,
+      image: body.image,
       userId: session.user.id,
       contributors: body.contributors,
     };
@@ -153,7 +150,7 @@ export async function POST(request: NextRequest) {
     const workspace = await createNewWorkspace(workspaceData);
 
     try {
-      await createWorkspaceFolder(session.user.id, workspace.slug);
+      await createWorkspaceFolder(workspace.id);
       console.log('✅ S3 folder created for workspace:', workspace.slug);
     } catch (s3Error) {
       console.error('⚠️ Failed to create S3 folder:', s3Error);

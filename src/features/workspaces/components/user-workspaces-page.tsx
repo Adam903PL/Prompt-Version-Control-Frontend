@@ -1,7 +1,11 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Button } from '@/shared/components/ui/button';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/shared/components/ui/avatar';
 import {
   Card,
   CardContent,
@@ -9,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
+import { LayoutDashboard } from 'lucide-react';
 import { getUserWithWorkspaces } from '../services/get-user-with-workspaces';
 
 interface UserWorkspacesPageProps {
@@ -22,7 +27,6 @@ interface Workspace {
   name: string | null;
   slug: string;
   description: string | null;
-  visibility: string;
   createdAt: Date;
 }
 
@@ -46,32 +50,41 @@ export default async function UserWorkspacesPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-zinc-950 to-black">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
-
-      <div className="container max-w-6xl mx-auto py-8 px-4 relative z-10">
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            {user.image && (
-              <Image
-                src={user.image}
-                alt={user.name ?? user.username}
-                width={80}
-                height={80}
-                className="rounded-full border-2 border-zinc-700/50 object-cover"
+    <div className="container max-w-6xl mx-auto py-8 px-4 relative z-10">
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          {user.image && (
+            <Avatar
+              className="h-20 w-20 rounded-full border-2 border-zinc-700/50"
+              withSantaHat
+            >
+              <AvatarImage
+                src={user.image || undefined}
+                alt={user.name ?? user.username ?? 'User Avatar'}
+                className="object-cover"
               />
-            )}
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-                {user.name}
-              </h1>
-              <p className="text-zinc-400 text-lg">@{user.username}</p>
-            </div>
+              <AvatarFallback className="text-2xl font-bold bg-zinc-800 text-zinc-400">
+                {(user.name?.[0] || user.username?.[0] || 'U').toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              {user.name}
+            </h1>
+            <p className="text-zinc-400 text-lg">@{user.username}</p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-zinc-200">Workspaces</h2>
+        <Link href={`/dashboard/workspaces/new`}>
+          <Button className="bg-gradient-to-r from-zinc-100 to-white hover:from-white hover:to-zinc-100 text-black font-medium shadow-lg shadow-white/10 transition-all">
+            Create Workspace
+          </Button>
+        </Link>
+      </div>
 
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-zinc-200">Workspaces</h2>

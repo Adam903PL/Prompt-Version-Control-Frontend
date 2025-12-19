@@ -143,7 +143,9 @@ model SshKey {
 
 model WorkspaceContributor {
   id      String   @id @default(cuid())
-  role    String   @default("contributor") // owner, maintainer, contributor
+
+  role    String   @default("member") // owner, co-owner, moderator, member
+
   addedAt DateTime @default(now())
 
   workspaceId String
@@ -162,8 +164,9 @@ model Workspace {
   createdAt   DateTime @default(now())
   description String?
 
-  // Auth Branch Field
-  visibility String @default("public")
+
+  image       String?
+
 
   userId        String
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -335,4 +338,30 @@ model OrganizationRole {
 
   @@unique([organizationId, name])
   @@map("organization_role")
+}
+
+model Passkey {
+  id String @id
+
+  name String?
+
+  publicKey String
+
+  userId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  webauthnUserID String
+
+  counter Int
+
+  deviceType String
+
+  backedUp Boolean
+
+  transports String?
+
+  createdAt DateTime?
+
+  @@map("passkey")
 }
