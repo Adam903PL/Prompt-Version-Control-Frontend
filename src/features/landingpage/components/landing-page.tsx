@@ -117,12 +117,18 @@ export const LandingPage = () => {
           transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
           className="flex flex-col sm:flex-row justify-center gap-4 mb-16"
         >
-          <button className="px-8 py-4 bg-white text-black font-semibold rounded-lg hover:scale-105 transition-transform flex items-center justify-center gap-2">
+          <button
+            type="button"
+            className="px-8 py-4 bg-white text-black font-semibold rounded-lg hover:scale-105 transition-transform flex items-center justify-center gap-2"
+          >
             Install PVC <ArrowRight size={18} />
           </button>
-          <button className="px-8 py-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg backdrop-blur-md hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
+          <Link
+            href="/docs"
+            className="px-8 py-4 bg-white/5 border border-white/10 text-white font-medium rounded-lg backdrop-blur-md hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+          >
             <Terminal size={18} /> View Documentation
-          </button>
+          </Link>
         </motion.div>
 
         {/* Hero Visual: The "Glass Prism" Dashboard Preview */}
@@ -432,9 +438,9 @@ export const LandingPage = () => {
       {/* Footer */}
       <footer className="py-12 border-t border-white/10 text-center text-gray-500 text-sm relative z-10 bg-black">
         <div className="flex justify-center gap-6 mb-8">
-          <a href="#" className="hover:text-white transition-colors">
+          <Link href="/docs" className="hover:text-white transition-colors">
             Documentation
-          </a>
+          </Link>
           <a
             href="https://github.com/promptversioncontrol-org"
             target="_blank"
