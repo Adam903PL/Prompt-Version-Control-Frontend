@@ -42,6 +42,9 @@ model User {
   sentOrgInvitations      OrganizationInvitation[] @relation("SentOrganizationInvitations")
   receivedOrgInvitations  OrganizationInvitation[] @relation("ReceivedOrganizationInvitations")
 
+  description String?
+  links       Json?
+
   // --- Auth Features (Auth Branch) ---
   telegramTokens TelegramToken[]
   userTelegrams  UserTelegram[]
