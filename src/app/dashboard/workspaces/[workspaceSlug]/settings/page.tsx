@@ -4,6 +4,7 @@ import { saveSecurityRules } from '@/features/workspaces/contracts/save-security
 import { getConnectedTelegram } from '@/features/workspaces/contracts/get-connected-telegram';
 import { prisma } from '@/shared/lib/prisma';
 import { notFound } from 'next/navigation';
+import { PlanType } from '@/features/billing/contracts/billing.dto';
 import {
   Tabs,
   TabsContent,
@@ -38,6 +39,11 @@ export default async function WorkspaceSettingsPage({
   if (!workspace) {
     notFound();
   }
+
+  const owner = workspace.contributors.find((c) => c.role === 'OWNER');
+  const isOwnerPremium = owner?.user.plan === PlanType.PREMIUM;
+  // If owner is premium, everyone in workspace has access to premium features of that workspace
+  const isPremiumFeatureAvailable = isOwnerPremium;
 
   const connectedTelegram = await getConnectedTelegram();
 
@@ -133,7 +139,10 @@ export default async function WorkspaceSettingsPage({
         </TabsContent>
 
         <TabsContent value="telegram" className="mt-6">
-          <TelegramSettings initialConnectedAccount={connectedTelegram} />
+          <TelegramSettings
+            initialConnectedAccount={connectedTelegram}
+            isPremiumFeatureAvailable={isPremiumFeatureAvailable}
+          />
         </TabsContent>
       </Tabs>
     </div>

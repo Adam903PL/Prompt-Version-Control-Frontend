@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 export async function createCheckoutSession(priceId: string, orgId?: string) {
   // Initialize Stripe directly to ensure env var is picked up
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-12-18.acacia',
+    apiVersion: '2025-12-15.clover',
     typescript: true,
   });
   const session = await auth.api.getSession({
@@ -117,7 +117,7 @@ export async function createCheckoutSession(priceId: string, orgId?: string) {
         quantity: 1,
       },
     ],
-    success_url: `${baseUrl}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${baseUrl}/dashboard/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/dashboard/billing/cancel`,
     metadata: {
       userId: user.id,

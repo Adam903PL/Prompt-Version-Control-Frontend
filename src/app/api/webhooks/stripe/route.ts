@@ -8,6 +8,10 @@ export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get('Stripe-Signature') as string;
 
+  console.log('--- WEBOOK RECEIVED ---');
+  console.log('Signature:', signature ? 'Present' : 'Missing');
+  console.log('Secret Configured:', !!process.env.STRIPE_WEBHOOK_SECRET);
+
   let event: Stripe.Event;
 
   try {
@@ -16,8 +20,10 @@ export async function POST(req: Request) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET || '',
     );
+    console.log('Event Type:', event.type);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Webhook Error:', message);
     return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 
