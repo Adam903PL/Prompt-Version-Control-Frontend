@@ -1,4 +1,5 @@
-import { prisma } from '@/shared/lib/prisma';
+// I realized I need to check the type definition first.
+
 import type {
   CreateWorkspaceInput,
   CreateWorkspaceResponse,
@@ -37,6 +38,7 @@ export async function createNewWorkspace(
         slug: uniqueSlug,
         description: workspaceData.description,
         userId: workspaceData.userId,
+        image: workspaceData.image,
       },
     });
 

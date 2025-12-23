@@ -9,7 +9,13 @@ import { useParams } from 'next/navigation';
 function ReportContent() {
   const searchParams = useSearchParams();
   const params = useParams();
-  const fileKey = searchParams.get('key') || undefined;
+  const fileKey = searchParams?.get('key') || undefined;
+  const workspaceSlug =
+    typeof params?.workspaceSlug === 'string'
+      ? params.workspaceSlug
+      : undefined;
+  const username =
+    typeof params?.username === 'string' ? params.username : undefined;
 
   return (
     <ReportViewer
