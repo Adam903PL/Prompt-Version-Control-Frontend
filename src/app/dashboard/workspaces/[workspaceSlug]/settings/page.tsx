@@ -4,6 +4,7 @@ import { saveSecurityRules } from '@/features/workspaces/contracts/save-security
 import { getConnectedTelegram } from '@/features/workspaces/contracts/get-connected-telegram';
 import { prisma } from '@/shared/lib/prisma';
 import { notFound } from 'next/navigation';
+import { PlanType } from '@/features/billing/contracts/billing.dto';
 import {
   Tabs,
   TabsContent,
@@ -11,6 +12,8 @@ import {
   TabsTrigger,
 } from '@/shared/components/ui/tabs';
 import Link from 'next/link';
+
+import { InviteWorkspaceMemberForm } from '@/features/workspaces/components/invite-workspace-member-form';
 import {
   ChevronRight,
   LayoutGrid,
@@ -22,6 +25,7 @@ import { WorkspaceGeneralSettings } from '@/features/workspaces/components/works
 import { WorkspaceContributorsSettings } from '@/features/workspaces/components/workspace-contributors-settings';
 import { auth } from '@/shared/lib/auth';
 import { headers } from 'next/headers';
+
 
 interface WorkspaceSettingsPageProps {
   params: Promise<{ workspaceSlug: string }>;
@@ -51,6 +55,11 @@ export default async function WorkspaceSettingsPage({
   if (!workspace) {
     notFound();
   }
+
+  const owner = workspace.contributors.find((c) => c.role === 'OWNER');
+  const isOwnerPremium = owner?.user.plan === PlanType.PREMIUM;
+  // If owner is premium, everyone in workspace has access to premium features of that workspace
+  const isPremiumFeatureAvailable = isOwnerPremium;
 
   const connectedTelegram = await getConnectedTelegram();
 
@@ -88,47 +97,55 @@ export default async function WorkspaceSettingsPage({
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="bg-zinc-900/50 border border-zinc-800">
-          <TabsTrigger value="general">
-            <Building2 className="w-4 h-4 mr-2" /> General
-          </TabsTrigger>
-          <TabsTrigger value="contributors">
-            <Users className="w-4 h-4 mr-2" /> Team
-          </TabsTrigger>
-          <TabsTrigger value="security">Security Policy</TabsTrigger>
-          <TabsTrigger value="telegram">Telegram Notifications</TabsTrigger>
-        </TabsList>
+<Tabs defaultValue="general" className="w-full">
+  <TabsList className="bg-zinc-900/50 border border-zinc-800">
+    <TabsTrigger value="general">
+      <Building2 className="w-4 h-4 mr-2" /> General
+    </TabsTrigger>
 
-        <TabsContent value="general" className="mt-6">
-          {/* @ts-expect-error Prisma Client outdated (locked dll), image field exists in DB */}
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <WorkspaceGeneralSettings workspace={workspace as any} />
-        </TabsContent>
+    <TabsTrigger value="contributors">
+      <Users className="w-4 h-4 mr-2" /> Team
+    </TabsTrigger>
 
-        <TabsContent value="contributors" className="mt-6">
-          <WorkspaceContributorsSettings
-            workspaceId={workspace.id}
-            currentUserId={session?.user?.id || ''}
-            ownerId={workspace.userId}
-            contributors={workspace.contributors}
-          />
-        </TabsContent>
+    <TabsTrigger value="security">Security Policy</TabsTrigger>
+    <TabsTrigger value="telegram">Telegram Notifications</TabsTrigger>
+  </TabsList>
 
-        <TabsContent value="security" className="mt-6">
-          <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800">
-            <SecurityPolicyEditor
-              workspaceId={workspace.id}
-              initialRules={workspace.securityRules}
-              onSave={saveSecurityRules}
-            />
-          </div>
-        </TabsContent>
+  <TabsContent value="general" className="mt-6">
+    {/* @ts-expect-error Prisma Client outdated (locked dll), image field exists in DB */}
+    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+    <WorkspaceGeneralSettings workspace={workspace as any} />
+  </TabsContent>
 
-        <TabsContent value="telegram" className="mt-6">
-          <TelegramSettings initialConnectedAccount={connectedTelegram} />
-        </TabsContent>
-      </Tabs>
+  <TabsContent value="contributors" className="mt-6 space-y-6">
+    <InviteWorkspaceMemberForm workspaceId={workspace.id} />
+
+    <WorkspaceContributorsSettings
+      workspaceId={workspace.id}
+      currentUserId={session?.user?.id || ''}
+      ownerId={workspace.userId}
+      contributors={workspace.contributors}
+    />
+  </TabsContent>
+
+  <TabsContent value="security" className="mt-6">
+    <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800">
+      <SecurityPolicyEditor
+        workspaceId={workspace.id}
+        initialRules={workspace.securityRules}
+        onSave={saveSecurityRules}
+      />
+    </div>
+  </TabsContent>
+
+  <TabsContent value="telegram" className="mt-6">
+    <TelegramSettings
+      initialConnectedAccount={connectedTelegram}
+      isPremiumFeatureAvailable={isPremiumFeatureAvailable}
+    />
+  </TabsContent>
+</Tabs>
+ 
     </div>
   );
 }
