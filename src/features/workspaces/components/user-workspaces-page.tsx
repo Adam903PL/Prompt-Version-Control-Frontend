@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
-import { LayoutDashboard } from 'lucide-react';
+
 import { getUserWithWorkspaces } from '../services/get-user-with-workspaces';
 
 interface UserWorkspacesPageProps {
@@ -131,52 +131,7 @@ export default async function UserWorkspacesPage({
             </Link>
           ))}
         </div>
-
-        {user.workspacesOwned.length === 0 ? (
-          <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50">
-            <CardContent className="py-12 text-center">
-              <p className="text-zinc-400 mb-4">No workspaces yet</p>
-              <Button
-                asChild
-                className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-200 hover:bg-zinc-700/50 hover:text-white backdrop-blur-sm transition-all"
-              >
-                <Link href={`/dashboard/workspaces/new`}>
-                  Create Your First Workspace
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {user.workspacesOwned.map((workspace) => (
-              <Link
-                key={workspace.id}
-                href={`/dashboard/workspaces/${workspace.slug}`}
-              >
-                <Card className="bg-zinc-900/40 backdrop-blur-xl border-zinc-800/50 hover:border-zinc-700/50 transition-all cursor-pointer h-full">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-zinc-100">
-                      {workspace.name}
-                    </CardTitle>
-                    <CardDescription className="text-zinc-400">
-                      {workspace.description || 'No description'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2 text-sm text-zinc-500">
-                      <span className="capitalize">{workspace.visibility}</span>
-                      <span>•</span>
-                      <span>
-                        {new Date(workspace.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

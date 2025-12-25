@@ -90,7 +90,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Logo Area */}
       <div className="p-6 flex items-center gap-4 overflow-hidden border-b border-zinc-900">
         <div className="flex-shrink-0 relative group cursor-pointer">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+          <div className="absolute -inset-1 bg-white rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
           <div className="relative bg-zinc-900 rounded-lg p-2 ring-1 ring-zinc-800">
             <Image
               src="/icon/logo.svg"
@@ -100,7 +100,6 @@ export function Sidebar({ className }: SidebarProps) {
               className="w-6 h-6"
             />
           </div>
-
         </div>
         <div
           className={cn(
@@ -193,9 +192,16 @@ export function Sidebar({ className }: SidebarProps) {
                   <p className="text-sm font-medium text-zinc-200 truncate pr-2">
                     {session.user.name}
                   </p>
-                  {/* Optional Plan Badge */}
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-mono">
-                    Free
+                  {/* Plan Badge */}
+                  <span
+                    className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded border font-mono capitalize transition-all',
+                      (session.user as { plan?: string }).plan === 'premium'
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-[0_0_10px_rgba(168,85,247,0.15)]'
+                        : 'bg-zinc-800 text-zinc-400 border-zinc-700',
+                    )}
+                  >
+                    {(session.user as { plan?: string }).plan || 'Free'}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500 truncate">

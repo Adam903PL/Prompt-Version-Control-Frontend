@@ -35,6 +35,10 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
       },
+      plan: {
+        type: 'string',
+        required: false,
+      },
     },
   },
   plugins: [
