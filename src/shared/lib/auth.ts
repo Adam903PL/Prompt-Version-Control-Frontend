@@ -13,6 +13,10 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
+  trustedOrigins: [
+    'http://localhost:3000',
+    'https://rewards-richards-classic-donor.trycloudflare.com',
+  ],
 
   socialProviders: {
     github: {
@@ -55,7 +59,7 @@ export const auth = betterAuth({
         ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
         : 'localhost',
       rpName: 'PVC',
-      origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      origin: process.env.NEXT_PUBLIC_APP_URL,
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
         residentKey: 'preferred',
