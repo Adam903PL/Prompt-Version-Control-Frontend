@@ -4,15 +4,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useRouter } from 'next/navigation';
 
 // Actions
 import { createOrganizationAction } from '../actions/create-organization';
-import { getUserWorkspacesAction } from '@/features/workspaces/actions/get-user-workspaces';
-import {
-  searchUsers,
-  type SearchUserResult,
-} from '@/features/users/actions/search-users';
 
 // Contracts / DTOs
 import {
@@ -23,7 +17,7 @@ import {
 // UI Components
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { Input } from '@/shared/components/ui/input';
+
 import {
   Form,
   FormControl,
@@ -39,8 +33,6 @@ import { cn } from '@/shared/lib/utils';
 import { Loader2, Check } from 'lucide-react';
 
 export function CreateOrganizationForm({ userId }: { userId: string }) {
-  const [isPending, setIsPending] = useState(false);
-  const [step, setStep] = useState(1);
   const [isPending, setIsPending] = useState(false);
   const [step, setStep] = useState(1);
   const router = useRouter();
@@ -59,8 +51,6 @@ export function CreateOrganizationForm({ userId }: { userId: string }) {
     },
   });
 
-  // Load user workspaces
-
   // Auto-generate slug from name
   const watchName = form.watch('name');
   useEffect(() => {
@@ -74,8 +64,6 @@ export function CreateOrganizationForm({ userId }: { userId: string }) {
       );
     }
   }, [watchName, form]);
-
-  // Debounced search logic for invitations
 
   async function onSubmit(values: CreateOrganizationDto) {
     setIsPending(true);
@@ -113,8 +101,6 @@ export function CreateOrganizationForm({ userId }: { userId: string }) {
       form.handleSubmit(onSubmit)();
     }
   };
-
-  const prevStep = () => setStep((s) => s - 1);
 
   const prevStep = () => setStep((s) => s - 1);
 
