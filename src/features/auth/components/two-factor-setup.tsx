@@ -34,13 +34,9 @@ export function TwoFactorSetup() {
     setIsLoading(true);
     setError(null);
     try {
-      const rawRes = await authClient.twoFactor.enable({
+      const res = await authClient.twoFactor.enable({
         password,
       });
-      const res: TwoFactorEnableResult = {
-        error: (rawRes as unknown as TwoFactorEnableResult).error,
-        data: (rawRes as unknown as TwoFactorEnableResult).data,
-      };
       if (res.error) {
         setError(res.error.message || 'Failed to enable 2FA');
       } else if (res.data?.totpURI) {
